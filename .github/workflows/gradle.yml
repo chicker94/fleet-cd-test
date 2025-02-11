@@ -50,6 +50,34 @@ jobs:
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
+  update-manifest:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Get short SHA
+      id: sha
+      run: echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
+    - name: Checkout CD repository
+      uses: actions/checkout@v4
+      with:
+        repository: chicker94/fleet-cd-test
+        ref: main
+        ssh-key: ${{ secrets.CD_REPO_SSH_KEY }}
+        
+    - name: Update Kubernetes manifest
+      run: |
+        cd fleet-cd-test/simple/manifests/deployments
+        sed -i "s|chicker94/hello:[a-zA-Z0-9]*|chicker94/hello:${{ env.SHORT_SHA }}|" hello.yaml
+        
+    - name: Commit and push changes
+      run: |
+        git config --global user.name 'GitHub Actions'
+        git config --global user.email 'github-actions@github.com'
+        git add fleet-cd-test/simple/manifests/deployments/hello.yaml
+        git commit -m "Update image tag to ${{ env.SHORT_SHA }}"
+        git push
+
   dependency-submission:
     runs-on: ubuntu-latest
     permissions:
