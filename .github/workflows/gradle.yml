@@ -67,14 +67,13 @@ jobs:
         
     - name: Update Kubernetes manifest
       run: |
-        cd fleet-cd-test/simple/manifests/deployments
-        sed -i "s|chicker94/hello:[a-zA-Z0-9]*|chicker94/hello:${{ env.SHORT_SHA }}|" hello.yaml
+        sed -i "s|chicker94/hello:[a-zA-Z0-9]*|chicker94/hello:${{ env.SHORT_SHA }}|" simple/manifests/deployments/hello.yaml
         
     - name: Commit and push changes
       run: |
         git config --global user.name 'GitHub Actions'
         git config --global user.email 'github-actions@github.com'
-        git add fleet-cd-test/simple/manifests/deployments/hello.yaml
+        git add simple/manifests/deployments/hello.yaml
         git commit -m "Update image tag to ${{ env.SHORT_SHA }}"
         git push
 
