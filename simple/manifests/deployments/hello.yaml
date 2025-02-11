@@ -16,6 +16,6 @@ spec:
     spec:
       containers:
       - name: hello
-        image: chicker94/hello:385f19c
+        image: chicker94/hello:e5901a8
         ports:
         - containerPort: 8080
