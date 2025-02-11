@@ -30,7 +30,7 @@ jobs:
       
     - name: Get short SHA
       id: sha
-      run: echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+      run: echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
       
     - name: Login to DockerHub
       uses: docker/login-action@v3
@@ -46,7 +46,7 @@ jobs:
       with:
         context: .
         push: true
-        tags: chicker94/hello:${{ env.SHORT_SHA }}
+        tags: chicker94/hello:${{ steps.sha.outputs.SHORT_SHA }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
@@ -54,9 +54,12 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
+    - name: Checkout source repository to get commit SHA
+      uses: actions/checkout@v4
+      
     - name: Get short SHA
       id: sha
-      run: echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+      run: echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
     - name: Checkout CD repository
       uses: actions/checkout@v4
@@ -64,17 +67,19 @@ jobs:
         repository: chicker94/fleet-cd-test
         ref: main
         ssh-key: ${{ secrets.CD_REPO_SSH_KEY }}
+        path: cd-repo
         
     - name: Update Kubernetes manifest
       run: |
-        sed -i "s|chicker94/hello:[a-zA-Z0-9]*|chicker94/hello:${{ env.SHORT_SHA }}|" simple/manifests/deployments/hello.yaml
+        sed -i "s|chicker94/hello:[a-zA-Z0-9]*|chicker94/hello:${{ steps.sha.outputs.SHORT_SHA }}|" cd-repo/simple/manifests/deployments/hello.yaml
         
     - name: Commit and push changes
       run: |
+        cd cd-repo
         git config --global user.name 'GitHub Actions'
         git config --global user.email 'github-actions@github.com'
         git add simple/manifests/deployments/hello.yaml
-        git commit -m "Update image tag to ${{ env.SHORT_SHA }}"
+        git commit -m "Update image tag to ${{ steps.sha.outputs.SHORT_SHA }}"
         git push
 
   dependency-submission:
