@@ -1,12 +1,14 @@
-# Build stage
-FROM gradle:jdk17-alpine AS build
-WORKDIR /app
-COPY . .
-RUN gradle build --no-daemon
+# Multi-stage build
 
-# Run stage
-FROM eclipse-temurin:17-jre-alpine
+# Step 1: Build the Go binary
+FROM golang:1.21 AS builder
 WORKDIR /app
-COPY --from=build /app/build/libs/*.jar app.jar
+COPY main.go .
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o app main.go
+
+# Step 2: Create minimal container
+FROM alpine:latest
+WORKDIR /root/
+COPY --from=builder /app/app .
 EXPOSE 8080
-ENTRYPOINT ["java","-jar","app.jar"]
+CMD ["./app"]
